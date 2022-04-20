@@ -28,8 +28,6 @@ do
     end
 
     local function travel(registered_nodes, chunks, idx, args, executor, takenPath)
-        print(#chunks)
-        print(idx)
         if idx <= #chunks then
             for _, node in pairs(registered_nodes) do
                 local argsCopy = copyTable(args)
