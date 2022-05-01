@@ -38,6 +38,11 @@ do
                     return travel(node.getNextNodes(), chunks, idx + 1, argsCopy, node.getExecutor(), takenPathCopy)
                 end
             end
+
+            if #registered_nodes == 0 then
+                print("Too many arguments")
+                return
+            end
         end
 
         return executor(args, takenPath);
@@ -78,17 +83,21 @@ do
 
             for _, childRet in pairs(childRets) do
                 local transform = {};
-                if required then
+                local shouldWrap = false;
+                if not required and child.isDefaultExecutor() then
+                    table.insert(transform, node.asArgument(false));
+                elseif required then
                     table.insert(transform, node.asArgument(true));
                 else
                     table.insert(transform, "[" .. node.asArgument(true));
+                    shouldWrap = true;
                 end
 
                 for _, chunk in pairs(childRet) do
                     table.insert(transform, chunk);
                 end
 
-                if not required then
+                if shouldWrap then
                     transform[#transform] = transform[#transform] .. "]";
                 end
 
@@ -221,13 +230,18 @@ do
         .append(
             str("name")
             .executes(function(args)
+                local matched = false;
                 for _, node in pairs(registered_nodes) do
                     if node.getProcessor()(args.name, {}) then
                         print("All formats for command " .. node.asArgument(true) .. ":")
                         for _, format in pairs(getAllFormats(node, {}, true, {})) do
                             print("    " .. table.concat(format, " "))
                         end
+                        matched = true;
                     end
+                end
+                if not matched then
+                    print("No command matching " .. args.name)
                 end
             end
             )
@@ -240,35 +254,53 @@ do
         end)
     )
 end
---[[
-chat.setFiguraCommandPrefix(">")
-command_tree.register(
-    literal("hello")
-    .append(
-        str("person")
-        .executes(
+
+
+
+
+
+
+-- example
+if true then
+    chat.setFiguraCommandPrefix(">")
+    command_tree.register(
+        literal("hello")
+        .append(
+            str("person")
+            .append(
+                str("person2")
+                .append(
+                    str("person3")
+                    .executes(
+                        function(args)
+                            print("Hello " .. args.person .. " and " .. args.person2 .. " and " .. args.person3 .. "!")
+                        end
+                    )
+                )
+            )
+            .executes(
                 function(args)
                     print("Hello " .. args.person .. "!")
                 end
+            )
+        )
+        .executes(
+            function()
+                print("Hello?")
+            end
         )
     )
-    .executes(
-        function()
-            print("Hello?")
-        end
-    )
-)
 
 
-command_tree.register(
-    literal("eat")
-    .append(
-        integer("much").append(str("what").executes(
+    command_tree.register(
+        literal("eat")
+        .append(
+            integer("much").append(str("what").executes(
                 function(args)
                     print("You ate " .. args.much .. " " .. args.what .. "???")
                 end
+            )
+            )
         )
     )
-)
-)
-]]
+end
